@@ -175,6 +175,19 @@ func (s *Server) handleConn(conn *Conn) {
 				Type: "game-end",
 				Data: data.Data,
 			}
+		case "health-update":
+			if conn.player == nil {
+				conn.writeErrMsg("health-update", fmt.Sprintf("Player is not registered"))
+				break
+			}
+			if !conn.player.dueling {
+				conn.writeErrMsg("health-update", fmt.Sprintf("Player is not dueling"))
+				break
+			}
+			conn.player.duelChan <- &DuelMessage{
+				Type: "health-update",
+				Data: data.Data,
+			}
 		}
 	}
 }
@@ -237,8 +250,6 @@ func (s *Server) duel(p1 *Player, p2 *Player) {
 	go p1.duelPlayer(p2, p1Chan, p2Chan, &wg, &s.mu)
 	go p2.duelPlayer(p1, p2Chan, p1Chan, &wg, &s.mu)
 	wg.Wait()
-	//close(p1Chan)
-	//close(p2Chan)
 	fmt.Println("finished duel!")
 	_ = s.broadcastPlayers()
 }
@@ -293,7 +304,7 @@ func (p *Player) duelPlayer(other *Player, playerChan, otherChan chan *DuelMessa
 				p.sendDuelResults(otherMsg, other)
 				mu.Unlock()
 				return
-			case "game-state":
+			case "game-state", "health-update":
 				mu.Lock()
 				err := p.conn.WriteJSON(map[string]any{
 					"request_type": otherMsg.Type,
