@@ -2,17 +2,6 @@
 
 This folder contains a browser-hosted version of the Java 8 client.
 
-## Build the web bundle
-
-```bash
-./scripts/build-web-bundle.sh
-```
-
-That produces:
-
-- `web/app/duel.io.jar`
-- dependency jars under `web/app/lib/`
-
 ## Run locally
 
 ```bash
