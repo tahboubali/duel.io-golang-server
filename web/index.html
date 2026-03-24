@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>duel.io Web Panel</title>
+    <script src="https://cjrtnc.leaningtech.com/4.2/loader.js"></script>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #07111f;
+        --panel: rgba(10, 23, 38, 0.92);
+        --panel-border: rgba(139, 193, 255, 0.28);
+        --text: #eef6ff;
+        --muted: #9eb7d2;
+        --accent: #4ec3ff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        background:
+          radial-gradient(circle at top, rgba(78, 195, 255, 0.22), transparent 42%),
+          linear-gradient(180deg, #08111d 0%, #040910 100%);
+        color: var(--text);
+        font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      }
+
+      body {
+        padding: 16px;
+      }
+
+      .shell {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        gap: 12px;
+        height: 100%;
+      }
+
+      .hud {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 16px;
+        border: 1px solid var(--panel-border);
+        border-radius: 18px;
+        background: var(--panel);
+        backdrop-filter: blur(12px);
+      }
+
+      .hud-title {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .hud-title strong {
+        font-size: 1rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .hud-title span {
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+
+      .status-pill {
+        min-width: 200px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(78, 195, 255, 0.12);
+        border: 1px solid rgba(78, 195, 255, 0.25);
+        color: var(--text);
+        text-align: center;
+        font-size: 0.9rem;
+      }
+
+      .viewport {
+        position: relative;
+        min-height: 0;
+        border: 1px solid var(--panel-border);
+        border-radius: 24px;
+        overflow: hidden;
+        background:
+          linear-gradient(135deg, rgba(18, 35, 56, 0.95), rgba(4, 10, 18, 0.95));
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+      }
+
+      .viewport::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+          linear-gradient(transparent 0%, rgba(255, 255, 255, 0.03) 50%, transparent 100%);
+      }
+
+      #game-root {
+        width: 100%;
+        height: 100%;
+      }
+
+      .error {
+        color: #ff9c9c;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="hud">
+        <div class="hud-title">
+          <strong>duel.io</strong>
+          <span>Java 8 client running directly in the browser via CheerpJ.</span>
+        </div>
+        <div class="status-pill" id="status-pill">Booting browser JVM…</div>
+      </div>
+      <div class="viewport">
+        <div id="game-root"></div>
+      </div>
+    </div>
+
+    <script type="module">
+      const statusPill = document.getElementById("status-pill");
+      const classPath = [
+        "/app/app/duel.io.jar",
+        "/app/app/lib/gson-2.11.0.jar",
+        "/app/app/lib/Java-WebSocket-1.6.0.jar",
+        "/app/app/lib/slf4j-api-2.0.13.jar",
+        "/app/app/lib/slf4j-nop-2.0.13.jar",
+      ].join(":");
+
+      let duelSocket = null;
+      const duelMessages = [];
+      let duelLastError = null;
+
+      function Java_org_example_BrowserWebSocketBridge_nativeIsSupported() {
+        return true;
+      }
+
+      function Java_org_example_BrowserWebSocketBridge_nativeConnect(lib, url) {
+        if (duelSocket && duelSocket.readyState === WebSocket.OPEN) {
+          duelSocket.close();
+        }
+        duelMessages.length = 0;
+        duelLastError = null;
+
+        const socketUrl = `${window.location.origin.replace(/^http/, "ws")}/connect`;
+        duelSocket = new WebSocket(socketUrl);
+        duelSocket.addEventListener("message", (event) => {
+          duelMessages.push(String(event.data));
+        });
+        duelSocket.addEventListener("error", () => {
+          duelLastError = "Browser WebSocket error";
+        });
+      }
+
+      function Java_org_example_BrowserWebSocketBridge_nativeIsOpen() {
+        return !!duelSocket && duelSocket.readyState === WebSocket.OPEN;
+      }
+
+      function Java_org_example_BrowserWebSocketBridge_nativePollMessage() {
+        return duelMessages.length > 0 ? duelMessages.shift() : null;
+      }
+
+      function Java_org_example_BrowserWebSocketBridge_nativePollError() {
+        const error = duelLastError;
+        duelLastError = null;
+        return error;
+      }
+
+      function Java_org_example_BrowserWebSocketBridge_nativeSend(lib, message) {
+        if (duelSocket && duelSocket.readyState === WebSocket.OPEN) {
+          duelSocket.send(message);
+        }
+      }
+
+      function Java_org_example_BrowserWebSocketBridge_nativeClose() {
+        if (duelSocket) {
+          duelSocket.close();
+          duelSocket = null;
+        }
+      }
+
+      try {
+        statusPill.textContent = "Starting Java 8 runtime…";
+        await cheerpjInit({
+          version: 8,
+          status: "splash",
+          natives: {
+            Java_org_example_BrowserWebSocketBridge_nativeIsSupported,
+            Java_org_example_BrowserWebSocketBridge_nativeConnect,
+            Java_org_example_BrowserWebSocketBridge_nativeIsOpen,
+            Java_org_example_BrowserWebSocketBridge_nativePollMessage,
+            Java_org_example_BrowserWebSocketBridge_nativePollError,
+            Java_org_example_BrowserWebSocketBridge_nativeSend,
+            Java_org_example_BrowserWebSocketBridge_nativeClose,
+          },
+        });
+        cheerpjCreateDisplay(-1, -1, document.getElementById("game-root"));
+        statusPill.textContent = "Launching duel.io…";
+        const launchPromise = cheerpjRunMain("org.example.Main", classPath);
+        statusPill.textContent = "duel.io is live in-browser";
+        window.duelLaunch = launchPromise;
+        const exitCode = await launchPromise;
+        statusPill.textContent = "duel.io exited with code " + exitCode;
+      } catch (error) {
+        console.error(error);
+        statusPill.textContent = "Launch failed";
+        statusPill.classList.add("error");
+      }
+    </script>
+  </body>
+</html>

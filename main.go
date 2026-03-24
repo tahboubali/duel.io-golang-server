@@ -37,17 +37,12 @@ func NewServer() *Server {
 }
 
 func (s *Server) Run() {
-	http.HandleFunc("/connect", func(w http.ResponseWriter, r *http.Request) {
-		conn, err := s.Upgrade(w, r, nil)
-		if err != nil {
-			log.Println("failed to upgrade ws connection for:", conn.RemoteAddr().String())
-			return
-		}
-		s.wg.Add(1)
-		go s.handleConn(&Conn{Conn: conn})
-	})
+	handler, err := s.NewHandler()
+	if err != nil {
+		log.Fatal(err)
+	}
 	log.Println("server started on port :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8080", handler))
 }
 
 func (s *Server) handleConn(conn *Conn) {
