@@ -140,7 +140,7 @@
       const duelMessages = [];
       let duelLastError = null;
 
-      function Java_org_example_BrowserWebSocketBridge_nativeIsSupported() {
+      function Java_org_example_BrowserWebSocketBridge_nativeIsSupported(lib) {
         return true;
       }
 
@@ -161,15 +161,15 @@
         });
       }
 
-      function Java_org_example_BrowserWebSocketBridge_nativeIsOpen() {
+      function Java_org_example_BrowserWebSocketBridge_nativeIsOpen(lib) {
         return !!duelSocket && duelSocket.readyState === WebSocket.OPEN;
       }
 
-      function Java_org_example_BrowserWebSocketBridge_nativePollMessage() {
+      function Java_org_example_BrowserWebSocketBridge_nativePollMessage(lib) {
         return duelMessages.length > 0 ? duelMessages.shift() : null;
       }
 
-      function Java_org_example_BrowserWebSocketBridge_nativePollError() {
+      function Java_org_example_BrowserWebSocketBridge_nativePollError(lib) {
         const error = duelLastError;
         duelLastError = null;
         return error;
@@ -181,7 +181,7 @@
         }
       }
 
-      function Java_org_example_BrowserWebSocketBridge_nativeClose() {
+      function Java_org_example_BrowserWebSocketBridge_nativeClose(lib) {
         if (duelSocket) {
           duelSocket.close();
           duelSocket = null;
