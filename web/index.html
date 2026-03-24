@@ -138,6 +138,7 @@
 
       let duelSocket = null;
       const duelMessages = [];
+      const duelMessageDelimiter = "\u001e";
       let duelLastError = null;
 
       function Java_org_example_BrowserWebSocketBridge_nativeIsSupported() {
@@ -165,8 +166,13 @@
         return !!duelSocket && duelSocket.readyState === WebSocket.OPEN;
       }
 
-      function Java_org_example_BrowserWebSocketBridge_nativePollMessage() {
-        return duelMessages.length > 0 ? duelMessages.shift() : null;
+      function Java_org_example_BrowserWebSocketBridge_nativePollMessages() {
+        if (duelMessages.length === 0) {
+          return null;
+        }
+        const batch = duelMessages.join(duelMessageDelimiter);
+        duelMessages.length = 0;
+        return batch;
       }
 
       function Java_org_example_BrowserWebSocketBridge_nativePollError() {
@@ -197,7 +203,7 @@
             Java_org_example_BrowserWebSocketBridge_nativeIsSupported,
             Java_org_example_BrowserWebSocketBridge_nativeConnect,
             Java_org_example_BrowserWebSocketBridge_nativeIsOpen,
-            Java_org_example_BrowserWebSocketBridge_nativePollMessage,
+            Java_org_example_BrowserWebSocketBridge_nativePollMessages,
             Java_org_example_BrowserWebSocketBridge_nativePollError,
             Java_org_example_BrowserWebSocketBridge_nativeSend,
             Java_org_example_BrowserWebSocketBridge_nativeClose,
