@@ -139,6 +139,7 @@
       let duelSocket = null;
       const duelMessages = [];
       let duelLastError = null;
+      const queryParams = new URLSearchParams(window.location.search);
 
       function Java_org_example_BrowserWebSocketBridge_nativeIsSupported(lib) {
         return true;
@@ -188,6 +189,18 @@
         }
       }
 
+      function Java_org_example_BrowserHarnessBridge_nativeIsSupported(lib) {
+        return true;
+      }
+
+      function Java_org_example_BrowserHarnessBridge_nativeGetQueryParam(lib, key) {
+        const value = queryParams.get(String(key));
+        return value === null ? null : value;
+      }
+
+      function Java_org_example_BrowserHarnessBridge_nativeReportStatus(lib, message) {
+      }
+
       try {
         statusPill.textContent = "Starting Java 8 runtime…";
         await cheerpjInit({
@@ -201,6 +214,9 @@
             Java_org_example_BrowserWebSocketBridge_nativePollError,
             Java_org_example_BrowserWebSocketBridge_nativeSend,
             Java_org_example_BrowserWebSocketBridge_nativeClose,
+            Java_org_example_BrowserHarnessBridge_nativeIsSupported,
+            Java_org_example_BrowserHarnessBridge_nativeGetQueryParam,
+            Java_org_example_BrowserHarnessBridge_nativeReportStatus,
           },
         });
         cheerpjCreateDisplay(-1, -1, document.getElementById("game-root"));
