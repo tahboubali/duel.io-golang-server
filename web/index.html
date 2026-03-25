@@ -114,20 +114,12 @@
   </head>
   <body>
     <div class="shell">
-      <div class="hud">
-        <div class="hud-title">
-          <strong>duel.io</strong>
-          <span>Java 8 client running directly in the browser via CheerpJ.</span>
-        </div>
-        <div class="status-pill" id="status-pill">Booting browser JVM…</div>
-      </div>
       <div class="viewport">
         <div id="game-root"></div>
       </div>
     </div>
 
     <script type="module">
-      const statusPill = document.getElementById("status-pill");
       const classPath = [
         "/app/app/duel.io.jar",
         "/app/app/lib/gson-2.11.0.jar",
@@ -202,7 +194,6 @@
       }
 
       try {
-        statusPill.textContent = "Starting Java 8 runtime…";
         await cheerpjInit({
           version: 8,
           status: "splash",
@@ -220,16 +211,11 @@
           },
         });
         cheerpjCreateDisplay(-1, -1, document.getElementById("game-root"));
-        statusPill.textContent = "Launching duel.io…";
         const launchPromise = cheerpjRunMain("org.example.Main", classPath);
-        statusPill.textContent = "duel.io is live in-browser";
         window.duelLaunch = launchPromise;
         const exitCode = await launchPromise;
-        statusPill.textContent = "duel.io exited with code " + exitCode;
       } catch (error) {
         console.error(error);
-        statusPill.textContent = "Launch failed";
-        statusPill.classList.add("error");
       }
     </script>
   </body>
