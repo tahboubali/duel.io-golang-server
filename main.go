@@ -3,13 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"github.com/gorilla/websocket"
 	"log"
 	"math"
 	"net/http"
+	"os"
 	"sort"
 	"sync"
+
+	"github.com/gorilla/websocket"
 )
 
 const (
@@ -47,7 +48,7 @@ func (s *Server) Run() {
 	if port == "" {
 		port = "8080"
 	}
-	log.Println("server started on port :"+port)
+	log.Println("server started on port :" + port)
 	log.Fatal(http.ListenAndServe(":"+port, handler))
 }
 
@@ -412,10 +413,19 @@ func NewPlayer(username string, conn *Conn) *Player {
 	}
 }
 
+// shooter types
+const (
+	GUN_PISTOL_TYPE  = iota
+	GUN_SNIPER_TYPE  = iota
+	GUN_SHOTGUN_TYPE = iota
+	GUN_RIFLE_TYPE   = iota
+)
+
 type GameState struct {
-	Pos     *Pos      `json:"position"`
-	Bullets []*Bullet `json:"bullets"`
-	Blocks  []*Block  `json:"blocks"`
+	Pos      *Pos      `json:"position"`
+	Bullets  []*Bullet `json:"bullets"`
+	Blocks   []*Block  `json:"blocks"`
+	AmmoLeft uint16    `json:"ammo_left"`
 }
 
 type DuelMessage struct {
