@@ -41,8 +41,13 @@ func (s *Server) Run() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("server started on port :8080")
-	log.Fatal(http.ListenAndServe(":8080", handler))
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Println("server started on port :"+port)
+	log.Fatal(http.ListenAndServe(":"+port, handler))
 }
 
 func (s *Server) handleConn(conn *Conn) {
