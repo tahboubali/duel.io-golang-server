@@ -44,6 +44,12 @@ func (s *Server) NewHandler() (http.Handler, error) {
 	fileServer := http.FileServer(http.Dir(root))
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /connect", s.handleConnect)
+	mux.HandleFunc("GET /__duel-jar-hash", func(w http.ResponseWriter, r *http.Request) {
+		_, err := w.Write([]byte(s.jarHash))
+		if err != nil {
+			log.Println("failed to write jar hash to conn:", r.RemoteAddr)
+		}
+	})
 	mux.Handle("GET /", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" || r.URL.Path == "/panel.html" {
 			http.ServeFile(w, r, filepath.Join(root, "index.html"))
@@ -51,12 +57,6 @@ func (s *Server) NewHandler() (http.Handler, error) {
 		}
 		fileServer.ServeHTTP(w, r)
 	}))
-	mux.HandleFunc("GET /__duel-jar-hash", func(w http.ResponseWriter, r *http.Request) {
-		_, err := w.Write([]byte(s.jarHash))
-		if err != nil {
-			log.Println("failed to write jar hash to conn:", r.RemoteAddr)
-		}
-	})
 	return logRequests(mux), nil
 }
 
