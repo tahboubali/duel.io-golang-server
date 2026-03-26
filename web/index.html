@@ -159,9 +159,10 @@
 
         try {
             await cheerpjInit({
-                gui: false,
+                disableErrorReporting: true,
+                disableLoadTimeReporting: true,
                 version: 8,
-                status: "splash",
+                status: "none",
                 natives: {
                     Java_org_example_BrowserWebSocketBridge_nativeIsSupported,
                     Java_org_example_BrowserWebSocketBridge_nativeConnect,
