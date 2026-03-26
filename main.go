@@ -2,11 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"math"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sort"
 	"sync"
 
@@ -25,6 +27,7 @@ type Server struct {
 	wg      sync.WaitGroup
 	players map[string]*Player
 	conns   map[string]*Conn
+	jarHash string
 }
 
 func NewServer() *Server {
@@ -48,8 +51,26 @@ func (s *Server) Run() {
 	if port == "" {
 		port = "8080"
 	}
+	hash, err := locateDuelFile()
+	if err != nil {
+		log.Fatal(err)
+	}
+	s.jarHash = hash
 	log.Println("server started on port :" + port)
 	log.Fatal(http.ListenAndServe(":"+port, handler))
+}
+
+func locateDuelFile() (string, error) {
+	matches, err := filepath.Glob("web/app/duel.io-*.jar")
+	if err != nil {
+		return "", err
+	}
+	if len(matches) > 1 {
+		return "", errors.New("unexpected amount of matches for duel file")
+	}
+	prefix := "web/app/duel.io-"
+	hash := matches[0][len(prefix) : len(matches[0])-4]
+	return hash, nil
 }
 
 func (s *Server) handleConn(conn *Conn) {

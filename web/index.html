@@ -1,178 +1,187 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>duel.io</title>
     <script src="https://cjrtnc.leaningtech.com/4.2/loader.js"></script>
     <style>
-      :root {
-        color-scheme: dark;
-        --bg: #07111f;
-        --panel: rgba(10, 23, 38, 0.92);
-        --panel-border: rgba(139, 193, 255, 0.28);
-        --text: #eef6ff;
-        --muted: #9eb7d2;
-        --accent: #4ec3ff;
-      }
+        :root {
+            color-scheme: dark;
+            --bg: #07111f;
+            --panel: rgba(10, 23, 38, 0.92);
+            --panel-border: rgba(139, 193, 255, 0.28);
+            --text: #eef6ff;
+            --muted: #9eb7d2;
+            --accent: #4ec3ff;
+        }
 
-      * {
-        box-sizing: border-box;
-      }
+        * {
+            box-sizing: border-box;
+        }
 
-      html,
-      body {
-        height: 100%;
-        margin: 0;
-        background:
-          radial-gradient(circle at top, rgba(78, 195, 255, 0.22), transparent 42%),
-          linear-gradient(180deg, #08111d 0%, #040910 100%);
-        color: var(--text);
-        font-family: "Trebuchet MS", "Segoe UI", sans-serif;
-      }
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            background: radial-gradient(circle at top, rgba(78, 195, 255, 0.22), transparent 42%),
+            linear-gradient(180deg, #08111d 0%, #040910 100%);
+            color: var(--text);
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+        }
 
-      body {
-        padding: 16px;
-      }
+        body {
+            padding: 16px;
+        }
 
-      .shell {
-        display: grid;
-        grid-template-rows: 1fr;
-        height: 100%;
-      }
+        .shell {
+            display: grid;
+            grid-template-rows: 1fr;
+            height: 100%;
+        }
 
-      .viewport {
-        position: relative;
-        height: 100%;
-        min-height: 0;
-        border: 1px solid var(--panel-border);
-        border-radius: 24px;
-        overflow: hidden;
-        background:
-          linear-gradient(135deg, rgba(18, 35, 56, 0.95), rgba(4, 10, 18, 0.95));
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
-      }
+        .viewport {
+            position: relative;
+            height: 100%;
+            min-height: 0;
+            border: 1px solid var(--panel-border);
+            border-radius: 24px;
+            overflow: hidden;
+            background: linear-gradient(135deg, rgba(18, 35, 56, 0.95), rgba(4, 10, 18, 0.95));
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+        }
 
-      .viewport::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        background:
-          linear-gradient(transparent 0%, rgba(255, 255, 255, 0.03) 50%, transparent 100%);
-      }
+        .viewport::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(transparent 0%, rgba(255, 255, 255, 0.03) 50%, transparent 100%);
+        }
 
-      #game-root {
-        width: 100%;
-        height: 100%;
-      }
+        #game-root {
+            width: 100%;
+            height: 100%;
+        }
     </style>
-  </head>
-  <body>
-    <div class="shell">
-      <div class="viewport">
+</head>
+<body>
+<div class="shell">
+    <div class="viewport">
         <div id="game-root"></div>
-      </div>
     </div>
+</div>
 
-    <script type="module">
-      const classPath = [
-        "/app/app/*.jar",
-        "/app/app/lib/gson-2.11.0.jar",
-        "/app/app/lib/Java-WebSocket-1.6.0.jar",
-        "/app/app/lib/slf4j-api-2.0.13.jar",
-        "/app/app/lib/slf4j-nop-2.0.13.jar",
-      ].join(":");
+<script type="module">
+    fetch('__duel-jar-hash')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("HTTP error.");
+            }
+            return response.text();
+        })
+        .then(init)
+        .catch(error => console.error(error));
 
-      let duelSocket = null;
-      const duelMessages = [];
-      let duelLastError = null;
-      const queryParams = new URLSearchParams(window.location.search);
+    async function init(duelHash) {
+        const classPath = [
+            `/app/app/duel.io-${duelHash}.jar`,
+            "/app/app/lib/gson-2.11.0.jar",
+            "/app/app/lib/Java-WebSocket-1.6.0.jar",
+            "/app/app/lib/slf4j-api-2.0.13.jar",
+            "/app/app/lib/slf4j-nop-2.0.13.jar",
+        ].join(":");
 
-      function Java_org_example_BrowserWebSocketBridge_nativeIsSupported(lib) {
-        return true;
-      }
+        let duelSocket = null;
+        const duelMessages = [];
+        let duelLastError = null;
+        const queryParams = new URLSearchParams(window.location.search);
 
-      function Java_org_example_BrowserWebSocketBridge_nativeConnect(lib, url) {
-        if (duelSocket && duelSocket.readyState === WebSocket.OPEN) {
-          duelSocket.close();
+        function Java_org_example_BrowserWebSocketBridge_nativeIsSupported(lib) {
+            return true;
         }
-        duelMessages.length = 0;
-        duelLastError = null;
 
-        const socketUrl = `${window.location.origin.replace(/^http/, "ws")}/connect`;
-        duelSocket = new WebSocket(socketUrl);
-        duelSocket.addEventListener("message", (event) => {
-          duelMessages.push(String(event.data));
-        });
-        duelSocket.addEventListener("error", () => {
-          duelLastError = "Browser WebSocket error";
-        });
-      }
+        function Java_org_example_BrowserWebSocketBridge_nativeConnect(lib, url) {
+            if (duelSocket && duelSocket.readyState === WebSocket.OPEN) {
+                duelSocket.close();
+            }
+            duelMessages.length = 0;
+            duelLastError = null;
 
-      function Java_org_example_BrowserWebSocketBridge_nativeIsOpen(lib) {
-        return !!duelSocket && duelSocket.readyState === WebSocket.OPEN;
-      }
-
-      function Java_org_example_BrowserWebSocketBridge_nativePollMessage(lib) {
-        return duelMessages.length > 0 ? duelMessages.shift() : null;
-      }
-
-      function Java_org_example_BrowserWebSocketBridge_nativePollError(lib) {
-        const error = duelLastError;
-        duelLastError = null;
-        return error;
-      }
-
-      function Java_org_example_BrowserWebSocketBridge_nativeSend(lib, message) {
-        if (duelSocket && duelSocket.readyState === WebSocket.OPEN) {
-          duelSocket.send(message);
+            const socketUrl = `${window.location.origin.replace(/^http/, "ws")}/connect`;
+            duelSocket = new WebSocket(socketUrl);
+            duelSocket.addEventListener("message", (event) => {
+                duelMessages.push(String(event.data));
+            });
+            duelSocket.addEventListener("error", () => {
+                duelLastError = "Browser WebSocket error";
+            });
         }
-      }
 
-      function Java_org_example_BrowserWebSocketBridge_nativeClose(lib) {
-        if (duelSocket) {
-          duelSocket.close();
-          duelSocket = null;
+        function Java_org_example_BrowserWebSocketBridge_nativeIsOpen(lib) {
+            return !!duelSocket && duelSocket.readyState === WebSocket.OPEN;
         }
-      }
 
-      function Java_org_example_BrowserHarnessBridge_nativeIsSupported(lib) {
-        return true;
-      }
+        function Java_org_example_BrowserWebSocketBridge_nativePollMessage(lib) {
+            return duelMessages.length > 0 ? duelMessages.shift() : null;
+        }
 
-      function Java_org_example_BrowserHarnessBridge_nativeGetQueryParam(lib, key) {
-        const value = queryParams.get(String(key));
-        return value === null ? null : value;
-      }
+        function Java_org_example_BrowserWebSocketBridge_nativePollError(lib) {
+            const error = duelLastError;
+            duelLastError = null;
+            return error;
+        }
 
-      function Java_org_example_BrowserHarnessBridge_nativeReportStatus(lib, message) {
-      }
+        function Java_org_example_BrowserWebSocketBridge_nativeSend(lib, message) {
+            if (duelSocket && duelSocket.readyState === WebSocket.OPEN) {
+                duelSocket.send(message);
+            }
+        }
 
-      try {
-        await cheerpjInit({
-          version: 8,
-          status: "splash",
-          natives: {
-            Java_org_example_BrowserWebSocketBridge_nativeIsSupported,
-            Java_org_example_BrowserWebSocketBridge_nativeConnect,
-            Java_org_example_BrowserWebSocketBridge_nativeIsOpen,
-            Java_org_example_BrowserWebSocketBridge_nativePollMessage,
-            Java_org_example_BrowserWebSocketBridge_nativePollError,
-            Java_org_example_BrowserWebSocketBridge_nativeSend,
-            Java_org_example_BrowserWebSocketBridge_nativeClose,
-            Java_org_example_BrowserHarnessBridge_nativeIsSupported,
-            Java_org_example_BrowserHarnessBridge_nativeGetQueryParam,
-            Java_org_example_BrowserHarnessBridge_nativeReportStatus,
-          },
-        });
-        cheerpjCreateDisplay(-1, -1, document.getElementById("game-root"));
-        const launchPromise = cheerpjRunMain("org.example.Main", classPath);
-        window.duelLaunch = launchPromise;
-        const exitCode = await launchPromise;
-      } catch (error) {
-        console.error(error);
-      }
-    </script>
-  </body>
+        function Java_org_example_BrowserWebSocketBridge_nativeClose(lib) {
+            if (duelSocket) {
+                duelSocket.close();
+                duelSocket = null;
+            }
+        }
+
+        function Java_org_example_BrowserHarnessBridge_nativeIsSupported(lib) {
+            return true;
+        }
+
+        function Java_org_example_BrowserHarnessBridge_nativeGetQueryParam(lib, key) {
+            const value = queryParams.get(String(key));
+            return value === null ? null : value;
+        }
+
+        function Java_org_example_BrowserHarnessBridge_nativeReportStatus(lib, message) {
+        }
+
+        try {
+            await cheerpjInit({
+                version: 8,
+                status: "splash",
+                natives: {
+                    Java_org_example_BrowserWebSocketBridge_nativeIsSupported,
+                    Java_org_example_BrowserWebSocketBridge_nativeConnect,
+                    Java_org_example_BrowserWebSocketBridge_nativeIsOpen,
+                    Java_org_example_BrowserWebSocketBridge_nativePollMessage,
+                    Java_org_example_BrowserWebSocketBridge_nativePollError,
+                    Java_org_example_BrowserWebSocketBridge_nativeSend,
+                    Java_org_example_BrowserWebSocketBridge_nativeClose,
+                    Java_org_example_BrowserHarnessBridge_nativeIsSupported,
+                    Java_org_example_BrowserHarnessBridge_nativeGetQueryParam,
+                    Java_org_example_BrowserHarnessBridge_nativeReportStatus,
+                },
+            });
+            cheerpjCreateDisplay(-1, -1, document.getElementById("game-root"));
+            const launchPromise = cheerpjRunMain("org.example.Main", classPath);
+            window.duelLaunch = launchPromise;
+            const exitCode = await launchPromise;
+        } catch (error) {
+            console.error(error);
+        }
+    }
+</script>
+</body>
 </html>
